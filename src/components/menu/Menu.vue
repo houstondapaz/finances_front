@@ -1,0 +1,3 @@
+<template>
+    <QList></QList>
+  </template>
