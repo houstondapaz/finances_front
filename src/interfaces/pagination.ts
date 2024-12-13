@@ -1,6 +1,13 @@
+import { AxiosHeaders } from "axios"
+
 export type SortDirection = 'ASC' | 'DESC'
 
-export enum FilterRule {
+export interface Sorting {
+    property: string
+    direction: SortDirection
+}
+
+export enum FilterOperator {
     EQUALS = 'eq',
     NOT_EQUALS = 'neq',
     GREATER_THAN = 'gt',
@@ -13,13 +20,57 @@ export enum FilterRule {
     NOT_IN = 'nin',
     IS_NULL = 'isnull',
     IS_NOT_NULL = 'isnotnull',
-  }
-  
-export interface Pagination {
+}
+
+
+export interface QueryFilter {
+    property: string
+    operator: FilterOperator
+    value?: string
+}
+export interface ApiPagination {
     page: number
-    size: number
-    sort?: {
-        property: string,
-        direction: SortDirection
+    limit: number
+    filters?: QueryFilter[]
+    sort?: Sorting
+}
+
+export interface Filter {
+    pagination: {
+        /**
+         * Column name (from column definition)
+         */
+        sortBy: string;
+        /**
+         * Is sorting in descending order?
+         */
+        descending: boolean;
+        /**
+         * Page number (1-based)
+         */
+        page: number;
+        /**
+         * How many rows per page? 0 means Infinite
+         */
+        rowsPerPage: number;
+    };
+    /**
+     * String/Object to filter table with (the 'filter' prop)
+     */
+    filter?: string | any
+}
+
+export function filterToApiPagination(filter: Filter): ApiPagination {
+    const apiPagination: ApiPagination = {
+        page: filter.filter?.page || 1,
+        limit: filter.filter?.rowsPerPag || 50
     }
+    return apiPagination
+}
+
+export function getPaginationHeadersProperties(headers: AxiosHeaders) {
+    const total = Number.parseInt(headers.get('X-Total')?.toString() || '1')
+    const pages = Number.parseInt(headers.get('X-Pages')?.toString() || '1')
+
+    return { total, pages }
 }

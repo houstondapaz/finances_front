@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { QCard, QDialog, QInnerLoading, QPage, QTable, QTd } from "quasar";
 import { ref } from "vue";
-import { useTransactionStore } from "../stores/transaction";
+import { useTransactionStore } from "@/stores/transaction";
+import TransactionCard from "@/components/transactions/TransactionCard.vue"
 
 const openEdit = ref(false);
 const openCreate = ref(false);
@@ -9,12 +10,29 @@ const transactionStore = useTransactionStore();
 
 const TRANSACTION_COLUMNS = [
   {
+    name: "createdAt",
+    field: "createdAt",
+    label: "Data",
+  },
+  {
     name: "description",
     field: "description",
     label: "Descrição",
   },
+  {
+    name: "value",
+    field: "value",
+    label: "Valor",
+  },
 ];
+
+transactionStore.filterTransactions({})
+
 function confirmRemove() {}
+function editTransaction(){}
+function addTransaction(){
+  openCreate.value = true
+}
 </script>
 
 <template>
@@ -25,13 +43,12 @@ function confirmRemove() {}
           :grid="$q.screen.xs"
           :hide-header="$q.screen.xs"
           class="col-12 actions-table"
-          title="users.title"
-          :data="transactionStore.transactions"
+          title="transactions.title"
+          :rows="transactionStore.transactions"
           :columns="TRANSACTION_COLUMNS"
           :loading="transactionStore.searching"
           row-key="name"
           :pagination.sync="transactionStore.pagination"
-          :rows-per-page-options="[0]"
           @request="transactionStore.filterTransactions"
         >
           <template v-slot:body-cell-id="props">
@@ -41,7 +58,7 @@ function confirmRemove() {}
                 size="sm"
                 flat
                 dense
-                @click="editUser(props.row)"
+                @click="editTransaction(props.row)"
               />
               <QBtn
                 icon="delete"
@@ -73,7 +90,7 @@ function confirmRemove() {}
                     </div>
                   </div>
                 </QCardSection>
-                <q-separator />
+                <QSeparator />
                 <QCardActions align="around">
                   <QBtn
                     flat
@@ -101,19 +118,19 @@ function confirmRemove() {}
           <template v-slot:top-right>
             <QBtn
               color="primary"
-              :disable="loading"
-              :label="$t('users.new.button')"
-              @click="addUser"
+              :disable="transactionStore.searching"
+              label="transactions.new.button"
+              @click="addTransaction"
             />
           </template>
         </QTable>
       </QCardSection>
     </QCard>
     <QDialog v-model="openEdit">
-      <EditUser :user="user" @onUpdateUser="onUpdateUser" />
+      <TransactionCard  />
     </QDialog>
     <QDialog v-model="openCreate">
-      <NewUser @onCreateUser="onCreateUser" />
+      <TransactionCard  />
     </QDialog>
   </QPage>
 </template>

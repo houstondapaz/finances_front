@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia'
-import { Transaction } from '../interfaces';
+import { Category } from '../interfaces';
 import { Filter, filterToApiPagination } from '../interfaces/pagination';
-import { createTransaction, filterTransactions, updateTransaction } from '../services/transactions.service';
+import { createCategory, filterCategories, updateCategory } from '../services/categories.service';
 
-export interface TransactionStore {
-    _transactions: Transaction[],
+export interface CategoryStore {
+    _categories: Category[],
     pagination: {
         page: number,
         rowsNumber: number,
@@ -15,9 +15,9 @@ export interface TransactionStore {
     searching: boolean
 }
 
-export const useTransactionStore = defineStore('transaction', {
-    state: (): TransactionStore => ({
-        _transactions: [],
+export const useCategoryStore = defineStore('category', {
+    state: (): CategoryStore => ({
+        _categories: [],
         pagination: {
             page: 1,
             rowsNumber: 50,
@@ -28,26 +28,26 @@ export const useTransactionStore = defineStore('transaction', {
         searching: false
     }),
     getters: {
-        transactions: (state) => state._transactions,
+        categories: (state) => state._categories,
     },
     actions: {
         async filterTransactions(filter: Filter) {
             this.searching = true
             try {
-                const response = await filterTransactions(filterToApiPagination(filter))
-                this._transactions = response.transactions
+                const response = await filterCategories(filterToApiPagination(filter))
+                this._categories = response.categories
                 this.total = response.total
                 this.totalPages = response.pages
             } finally {
                 this.searching = false
             }
         },
-        async upsertTransaction(transaction: Transaction) {
-            if (transaction.id) {
-                return await updateTransaction(transaction.id, transaction)
+        async upsertCategory(category: Category) {
+            if (category.id) {
+                return await updateCategory(category.id, category)
             }
 
-            await createTransaction(transaction)
+            await createCategory(category)
         },
         setPage(page: number) {
             this.pagination.page = page
