@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { Transaction } from '../interfaces';
-import { Filter, filterToApiPagination } from '../interfaces/pagination';
+import { ApiPagination, Filter, filterToApiPagination } from '../interfaces/pagination';
 import { createTransaction, filterTransactions, updateTransaction } from '../services/transactions.service';
 
 export interface TransactionStore {
@@ -8,7 +8,9 @@ export interface TransactionStore {
     pagination: {
         page: number,
         rowsNumber: number,
-        rowsPerPage: number
+        rowsPerPage: number,
+        descending: boolean,
+        sortBy: string
     },
     total: number
     totalPages: number
@@ -21,7 +23,9 @@ export const useTransactionStore = defineStore('transaction', {
         pagination: {
             page: 1,
             rowsNumber: 50,
-            rowsPerPage: 50
+            rowsPerPage: 50,
+            descending: false,
+            sortBy: 'date'
         },
         total: 0,
         totalPages: 0,
@@ -29,14 +33,22 @@ export const useTransactionStore = defineStore('transaction', {
     }),
     getters: {
         transactions: (state) => state._transactions,
+        tablePagination: ({ pagination }) => pagination
     },
     actions: {
-        async filterTransactions(filter: Filter) {
+        async filterTransactions(filter?: Filter) {
+            if (filter) {
+                this.pagination.page = filter.pagination.page
+                this.pagination.rowsPerPage = filter.pagination.rowsPerPage
+                this.pagination.descending = filter.pagination.descending
+                this.pagination.sortBy = filter.pagination.sortBy
+            }
             this.searching = true
             try {
                 const response = await filterTransactions(filterToApiPagination(filter))
                 this._transactions = response.transactions
                 this.total = response.total
+                this.pagination.rowsNumber = response.total
                 this.totalPages = response.pages
             } finally {
                 this.searching = false

@@ -60,10 +60,16 @@ export interface Filter {
     filter?: string | any
 }
 
-export function filterToApiPagination(filter: Filter): ApiPagination {
+export function filterToApiPagination(filter?: Filter): ApiPagination {
     const apiPagination: ApiPagination = {
-        page: filter.filter?.page || 1,
-        limit: filter.filter?.rowsPerPag || 50
+        page: filter?.pagination?.page || 1,
+        limit: filter?.pagination?.rowsPerPage || 50,
+        ...(filter?.pagination?.sortBy?.length ? {
+            sort: {
+                property: filter?.pagination.sortBy,
+                direction: filter?.pagination.descending ? 'DESC' : 'ASC'
+            }
+        } : {})
     }
     return apiPagination
 }

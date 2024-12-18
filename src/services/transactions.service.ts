@@ -14,7 +14,11 @@ export async function filterTransactions(pagination: ApiPagination) {
 }
 
 export async function createTransaction(transaction: Transaction) {
-    const response = await httpClient.post('/transactions', transaction)
+    const response = await httpClient.post('/transactions', {
+        ...transaction,
+        date: transaction.date.toISOString(),
+        categoryId: transaction.category.id
+    })
     return response.data
 }
 

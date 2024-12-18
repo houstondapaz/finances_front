@@ -9,10 +9,14 @@
         "sourceMap": true,
         "resolveJsonModule": true,
         "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
         "lib": [
             "esnext",
             "dom"
-        ]
+        ],
+        "paths": {
+          "@/*": ["./src/*"]
+        },
     },
     "include": [
         "src/**/*.ts",

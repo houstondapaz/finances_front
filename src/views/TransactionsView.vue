@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { QCard, QDialog, QInnerLoading, QPage, QTable, QTd } from "quasar";
+import dayjs from "dayjs";
 import { ref } from "vue";
 import { useTransactionStore } from "@/stores/transaction";
-import TransactionCard from "@/components/transactions/TransactionCard.vue"
+import TransactionCard from "@/components/transactions/TransactionCard.vue";
+import { Category } from "@/interfaces";
 
 const openEdit = ref(false);
 const openCreate = ref(false);
@@ -10,9 +12,17 @@ const transactionStore = useTransactionStore();
 
 const TRANSACTION_COLUMNS = [
   {
-    name: "createdAt",
-    field: "createdAt",
+    name: "date",
+    field: "date",
     label: "Data",
+    sortable: true,
+    format: (val: string) => dayjs(val).format("DD/MM/YYYY"),
+  },
+  {
+    name: "category",
+    field: "category",
+    label: "Categoria",
+    format: (val: Category) => val.name,
   },
   {
     name: "description",
@@ -26,12 +36,16 @@ const TRANSACTION_COLUMNS = [
   },
 ];
 
-transactionStore.filterTransactions({})
+transactionStore.filterTransactions();
 
 function confirmRemove() {}
-function editTransaction(){}
-function addTransaction(){
-  openCreate.value = true
+function editTransaction() {}
+function addTransaction() {
+  openCreate.value = true;
+}
+function onCreate(){
+  openCreate.value = false
+  transactionStore.filterTransactions()
 }
 </script>
 
@@ -48,7 +62,7 @@ function addTransaction(){
           :columns="TRANSACTION_COLUMNS"
           :loading="transactionStore.searching"
           row-key="name"
-          :pagination.sync="transactionStore.pagination"
+          v-model:pagination="transactionStore.pagination"
           @request="transactionStore.filterTransactions"
         >
           <template v-slot:body-cell-id="props">
@@ -71,7 +85,7 @@ function addTransaction(){
               />
             </QTd>
           </template>
-          <template v-slot:item="props">
+          <!-- <template v-slot:item="props">
             <div
               class="q-pa-xs col-xs-12 col-sm-6 col-md-4 col-lg-3 grid-style-transition"
               :style="props.selected ? 'transform: scale(0.95);' : ''"
@@ -111,7 +125,7 @@ function addTransaction(){
                 </QCardActions>
               </QCard>
             </div>
-          </template>
+          </template> -->
           <template v-slot:loading>
             <QInnerLoading showing color="primary" />
           </template>
@@ -127,10 +141,10 @@ function addTransaction(){
       </QCardSection>
     </QCard>
     <QDialog v-model="openEdit">
-      <TransactionCard  />
+      <TransactionCard />
     </QDialog>
     <QDialog v-model="openCreate">
-      <TransactionCard  />
+      <TransactionCard @success="onCreate"/>
     </QDialog>
   </QPage>
 </template>

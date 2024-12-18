@@ -7,32 +7,26 @@ export const httpClient = axios.create({
     withCredentials: true
 });
 
-// Flag to track if a token refresh is in progress
 let isRefreshing = false;
 let refreshSubscribers: Function[] = [];
 
-// Function to subscribe requests to be retried
 function subscribeTokenRefresh(callback: Function) {
     refreshSubscribers.push(callback);
 }
 
-// Function to notify all subscribers once a token refresh is complete
 function onRefreshed() {
     refreshSubscribers.forEach((callback) => callback());
     refreshSubscribers = [];
 }
 
-// Axios response interceptor
 httpClient.interceptors.response.use(
-    (response) => response, // Pass through successful responses
+    (response) => response,
     async (error) => {
         const originalRequest = error.config;
 
-        // If the response status is 401, try to refresh the token
-        if (error.response?.status === 401 && !originalRequest._retry) {
-            originalRequest._retry = true; // Mark the request as retried
+        if (error.response?.status === 401 && !originalRequest._retry && !/auth\/refresh/.test(originalRequest.url)) {
+            originalRequest._retry = true;
 
-            // If another refresh is already in progress, wait for it
             if (isRefreshing) {
                 return new Promise((resolve) => {
                     subscribeTokenRefresh(() => {
@@ -41,21 +35,20 @@ httpClient.interceptors.response.use(
                 });
             }
 
-            // Start the refresh process
             isRefreshing = true;
 
             try {
-                await httpClient.get('/auth/refresh'); // Call the refresh token endpoint
+                await httpClient.post('/auth/refresh');
                 isRefreshing = false;
-                onRefreshed(); // Notify all subscribers that the token has been refreshed
-                return httpClient(originalRequest); // Retry the original request
+                onRefreshed();
+                return httpClient(originalRequest);
             } catch (refreshError) {
                 isRefreshing = false;
-                return Promise.reject(refreshError); // If refresh fails, reject the original request
+                window.location.href = `${baseURL}/auth/google`
+                return Promise.reject(refreshError);
             }
         }
 
-        // If the error is not 401, or retry fails, reject the promise
         return Promise.reject(error);
     }
 );
