@@ -3,7 +3,7 @@
     <QForm @submit="onSubmit">
       <QCard>
         <QCardSection class="row items-center q-pb-none">
-          <div class="text-h6">{{ "categories.new.title" }}</div>
+          <div class="text-h6">Criar Categoria</div>
           <QSpace />
           <QBtn icon="close" flat round dense v-close-popup />
         </QCardSection>
@@ -14,13 +14,11 @@
             filled
             clearable
             v-model="name"
-            label="categories.columns.name"
+            label="Nome"
             lazy-rules
-            :rules="[
-              (val) => (val && val.length) || 'categories.rules.nameRequired',
-            ]"
+            :rules="[(val) => (val && val.length) || 'Nome é obrigatório']"
           />
-          <QSelect
+          <!-- <QSelect
             dense
             square
             filled
@@ -33,20 +31,24 @@
             map-options
             option-label="icon"
             v-model="icon"
-            label="categories.columns.icon"
+            label="Ícone"
             :options="iconsOptions"
             lazy-rules
-            error-message="categories.messages.iconRequired"
+            error-message="Ícone é obrigatório"
             :error="true"
           >
             <template v-slot:no-option>
               <QItem>
                 <QItemSection class="text-grey"
-                  >messages.iconNotFind</QItemSection
+                  >Ícone não encontrado</QItemSection
                 >
               </QItem>
             </template>
-          </QSelect>
+
+            <template v-slot:option="scope">
+              <QItem><QIcon size="sm" :name="scope.opt"></QIcon></QItem>
+            </template>
+          </QSelect> -->
         </QCardSection>
 
         <QCardActions align="right">
@@ -54,7 +56,7 @@
             color="primary"
             class="col-12"
             type="submit"
-            label="categories.buttons.create"
+            label="Adicionar"
           />
         </QCardActions>
       </QCard>
@@ -66,24 +68,30 @@ import { ref } from "vue";
 import type { Ref } from "vue";
 import { useCategoryStore } from "@/stores/categories";
 import { Category } from "@/interfaces";
-import * as Icons from '@quasar/extras/material-icons'
+import * as Icons from "@quasar/extras/material-icons";
 
 interface CategoryCardProps {
   category?: Category;
+  name?: string;
+}
+interface CategoryCardEvents {
+  (e: "success"): void;
 }
 
 const categoriesStore = useCategoryStore();
 
 const props = defineProps<CategoryCardProps>();
+const emit = defineEmits<CategoryCardEvents>();
 
-const name: Ref<string> = ref("");
+const name: Ref<string> = ref(props.name || "");
 const icon: Ref<string> = ref("");
 if (props.category) {
   name.value = props.category.name;
   icon.value = props.category.icon;
 }
-
-const iconsOptions = Object.keys(Icons)
+const iconsOptions = Object.keys(Icons).map((i) =>
+  i.replace("mat", "").toLowerCase()
+);
 
 async function onSubmit() {
   try {
@@ -92,6 +100,7 @@ async function onSubmit() {
       name: name.value,
       icon: icon.value,
     });
+    emit("success");
   } catch (ex) {
     alert(ex);
   }

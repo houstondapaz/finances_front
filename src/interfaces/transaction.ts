@@ -4,7 +4,7 @@ import { User } from "./user"
 export interface Transaction {
     id?: string
     value: number
-    date: Date
+    date: Date | string
     category: Category
     description?: string
     createdAt?: Date

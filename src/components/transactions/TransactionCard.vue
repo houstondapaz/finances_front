@@ -3,7 +3,7 @@
     <QForm @submit="onSubmit">
       <QCard>
         <QCardSection class="row items-center q-pb-none">
-          <div class="text-h6">{{ "transactions.new.title" }}</div>
+          <div class="text-h6">Adicionar Gasto</div>
           <QSpace />
           <QBtn icon="close" flat round dense v-close-popup />
         </QCardSection>
@@ -15,11 +15,10 @@
             clearable
             v-model="value"
             type="number"
-            label="transactions.columns.value"
+            label="Valor"
             lazy-rules
             :rules="[
-              (val) =>
-                (val && val.length) || 'transactions.rules.valueRequired',
+              (val) => (val && !Number.isNaN(val)) || 'Valor é obrigatório',
             ]"
           />
           <QInput
@@ -28,16 +27,16 @@
             filled
             clearable
             v-model="date"
-            label="transactions.columns.date"
+            @focus="() => dateProxyRef?.show()"
+            label="Data"
             mask="##/##/####"
-            :rules="[
-              (val) => (val && val.length) || 'transactions.rules.dateRequired',
-            ]"
+            :rules="[(val) => (val && val.length) || 'Data é obrigatória']"
           >
             <template v-slot:prepend>
               <QIcon name="event" class="cursor-pointer">
                 <QPopupProxy
                   cover
+                  ref="dateProxy"
                   transition-show="scale"
                   transition-hide="scale"
                 >
@@ -70,18 +69,18 @@
             @filter="searchCategoriesAutocomplete"
             @virtual-scroll="searchCategoriesOnScroll"
             v-model="category"
-            label="transactions.columns.category"
+            label="Categoria"
             :loading="categoriesStore.searching"
             :options="categoriesStore.categories"
+            error-message="Categoria é obrigatória"
             lazy-rules
-            error-message="transactions.messages.categoryRequired"
             :error="!category"
           >
             <template v-slot:no-option>
               <QItem>
                 <QItemSection class="text-grey"
-                  ><QBtn @click="() => (creatingCategory = true)"
-                    >Create Category</QBtn
+                  ><QBtn icon="add" color="primary" @click="() => (creatingCategory = true)"
+                    >Criar Categoria</QBtn
                   ></QItemSection
                 >
               </QItem>
@@ -93,34 +92,57 @@
             filled
             clearable
             v-model="description"
-            label="transactions.columns.description"
+            label="Descrição"
             lazy-rules
-            :rules="[
-              (val) =>
-                (val && val.length) ||
-                'transactions.messages.descriptionRequired',
-            ]"
+            :rules="[(val) => (val && val.length) || 'Descrição é obrigatória']"
+          >
+          </QInput>
+        </QCardSection>
+
+        <QCardActions align="right">
+          <QBtn color="primary" class="col-12" type="submit" label="Salvar" />
+        </QCardActions>
+      </QCard>
+    </QForm>
+    <QDialog v-model="creatingCategory">
+      <CategoryCard @success="onCreateCategory" />
+    </QDialog>
+
+    <QDialog v-model="isCreating" persistent>
+      <QCard>
+        <QCardSection class="row items-center">
+          <QAvatar icon="credit_card" color="primary" text-color="white" />
+          <span class="q-ml-sm">Quantas parcelas?</span>
+
+          <QInput
+            dense
+            square
+            filled
+            clearable
+            v-model="installments"
+            label="Parcelas"
+            type="number"
+            lazy-rules
+            :rules="[(val) => val > 0 || 'Minimo uma parcela']"
           >
           </QInput>
         </QCardSection>
 
         <QCardActions align="right">
           <QBtn
+            flat
+            label="Salvar"
+            @click="confirmSave"
             color="primary"
-            class="col-12"
-            type="submit"
-            label="transactions.buttons.create"
+            v-close-popup
           />
         </QCardActions>
       </QCard>
-    </QForm>
-    <QDialog v-model="creatingCategory">
-      <CategoryCard />
     </QDialog>
   </div>
 </template>
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, useTemplateRef } from "vue";
 import type { Ref } from "vue";
 import { Transaction } from "@/interfaces";
 import { useTransactionStore } from "@/stores/transaction";
@@ -129,6 +151,7 @@ import { Category } from "@/interfaces";
 import CategoryCard from "../categories/CategoryCard.vue";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import { QInput, QPopupProxy } from "quasar";
 dayjs.extend(customParseFormat);
 
 interface TransactionCardProps {
@@ -140,19 +163,25 @@ interface TransactionCardEvents {
 const DATE_FORMAT = "DD/MM/YYYY";
 const transactionStore = useTransactionStore();
 const categoriesStore = useCategoryStore();
-
+const dateProxyRef = useTemplateRef<QPopupProxy>('dateProxy')
 const props = defineProps<TransactionCardProps>();
 const emit = defineEmits<TransactionCardEvents>();
+const isCreating: Ref<boolean> = ref(false);
 const date: Ref<string> = ref(dayjs().format(DATE_FORMAT));
-const value: Ref<number> = ref(0);
+const value: Ref<number|null> = ref(null);
 const description: Ref<string | undefined> = ref(undefined);
 const category: Ref<Category | undefined> = ref(undefined);
 const creatingCategory: Ref<boolean> = ref(false);
+const installments: Ref<number> = ref(1);
 
 if (props.transaction) {
-  date.value = props.transaction.date.toDateString();
+  date.value =
+    typeof props.transaction.date === "string"
+      ? dayjs(props.transaction.date).format(DATE_FORMAT)
+      : props.transaction.date.toDateString();
   value.value = props.transaction.value;
   description.value = props.transaction.description || "";
+  category.value = props.transaction.category;
 }
 
 function searchCategoriesAutocomplete(
@@ -168,7 +197,12 @@ function searchCategoriesAutocomplete(
   categoriesStore.textFilter = val;
   categoriesStore.pagination.page = 1;
 
-  update(() => categoriesStore.filterTransactions());
+  categoriesStore.filterTransactions().then(() => update());
+}
+
+function onCreateCategory() {
+  creatingCategory.value = false;
+  categoriesStore.filterTransactions();
 }
 
 function searchCategoriesOnScroll() {
@@ -177,8 +211,23 @@ function searchCategoriesOnScroll() {
   }
 }
 
+async function confirmSave() {
+  await transactionStore.upsertTransaction(
+    {
+      ...(props.transaction || {}),
+      date: dayjs(date.value, DATE_FORMAT).toDate(),
+      value: value.value,
+      description: description.value,
+      category: category.value!!,
+    },
+    installments.value
+  );
+
+  emit("success");
+}
+
 async function onSubmit() {
-  try {
+  if (props.transaction?.id) {
     await transactionStore.upsertTransaction({
       ...(props.transaction || {}),
       date: dayjs(date.value, DATE_FORMAT).toDate(),
@@ -187,8 +236,9 @@ async function onSubmit() {
       category: category.value!!,
     });
     emit("success");
-  } catch (ex) {
-    alert(ex);
+    return;
   }
+
+  isCreating.value = true;
 }
 </script>

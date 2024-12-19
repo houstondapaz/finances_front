@@ -9,6 +9,7 @@ export interface Sorting {
 
 export enum FilterOperator {
     EQUALS = 'eq',
+    BETWEEN = 'between',
     NOT_EQUALS = 'neq',
     GREATER_THAN = 'gt',
     GREATER_THAN_OR_EQUALS = 'gte',
