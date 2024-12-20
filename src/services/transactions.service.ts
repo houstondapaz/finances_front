@@ -19,7 +19,7 @@ export async function createTransaction(transaction: Transaction, installments: 
         ...transaction,
         date: (transaction.date as Date).toISOString(),
         categoryId: transaction.category.id,
-        installments: Number.parseInt(installments)
+        installments: Number.parseInt(installments.toString())
     })
     return response.data
 }

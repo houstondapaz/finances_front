@@ -216,7 +216,7 @@ async function confirmSave() {
     {
       ...(props.transaction || {}),
       date: dayjs(date.value, DATE_FORMAT).toDate(),
-      value: value.value,
+      value: value.value as number,
       description: description.value,
       category: category.value!!,
     },
@@ -231,7 +231,7 @@ async function onSubmit() {
     await transactionStore.upsertTransaction({
       ...(props.transaction || {}),
       date: dayjs(date.value, DATE_FORMAT).toDate(),
-      value: value.value,
+      value: value.value as number,
       description: description.value,
       category: category.value!!,
     });

@@ -34,8 +34,11 @@
         <QInnerLoading showing color="primary" />
       </template>
       <template v-slot:top-right>
-        <MonthSelector v-model="transactionStore.filterMonth" @change="onChangeMonth"></MonthSelector>
-        
+        <MonthSelector
+          v-model="transactionStore.filterMonth"
+          @change="onChangeMonth"
+        ></MonthSelector>
+
         <QBtn
           color="primary"
           :disable="transactionStore.searching"
@@ -89,29 +92,41 @@ const selectedTransaction = ref<Transaction | undefined>(undefined);
 const transactionStore = useTransactionStore();
 const transactionToDelete = ref<Transaction | null>(null);
 
-const TRANSACTION_COLUMNS = [
+const TRANSACTION_COLUMNS: {
+  name: string;
+  field: string;
+  label: string;
+  sortable: boolean;
+  format: (val: unknown) => string;
+  align?: "right" | "left" | "center" | undefined;
+}[] = [
   {
     name: "date",
     field: "date",
     label: "Data",
     sortable: true,
-    format: (val: string) => dayjs(val).format("DD/MM/YYYY"),
+    format: (val: unknown) => dayjs(val as string).format("DD/MM/YYYY"),
   },
   {
     name: "category",
     field: "category",
     label: "Categoria",
-    format: (val: Category) => val.name,
+    sortable: false,
+    format: (val: unknown) => (val as Category).name,
   },
   {
     name: "description",
     field: "description",
     label: "Descrição",
+    sortable: false,
+    format: (val: unknown) => val as string,
   },
   {
     name: "value",
     field: "value",
     label: "Valor",
+    sortable: false,
+    format: (val: unknown) => val as string,
   },
   {
     name: "id",
@@ -119,6 +134,7 @@ const TRANSACTION_COLUMNS = [
     field: "id",
     sortable: false,
     align: "right",
+    format: (val: unknown) => val as string,
   },
 ];
 
