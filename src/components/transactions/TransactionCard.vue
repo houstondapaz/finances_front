@@ -18,7 +18,7 @@
             label="Valor"
             lazy-rules
             :rules="[
-              (val) => (val && !Number.isNaN(val)) || 'Valor é obrigatório',
+              (val:number) => (val && !Number.isNaN(val)) || 'Valor é obrigatório',
             ]"
           />
           <QInput
@@ -30,7 +30,7 @@
             @focus="() => dateProxyRef?.show()"
             label="Data"
             mask="##/##/####"
-            :rules="[(val) => (val && val.length) || 'Data é obrigatória']"
+            :rules="[(val:string) => (val && val.length) || 'Data é obrigatória']"
           >
             <template v-slot:prepend>
               <QIcon name="event" class="cursor-pointer">
@@ -79,7 +79,10 @@
             <template v-slot:no-option>
               <QItem>
                 <QItemSection class="text-grey"
-                  ><QBtn icon="add" color="primary" @click="() => (creatingCategory = true)"
+                  ><QBtn
+                    icon="add"
+                    color="primary"
+                    @click="() => (creatingCategory = true)"
                     >Criar Categoria</QBtn
                   ></QItemSection
                 >
@@ -94,7 +97,20 @@
             v-model="description"
             label="Descrição"
             lazy-rules
-            :rules="[(val) => (val && val.length) || 'Descrição é obrigatória']"
+            :rules="[(val:string) => (val && val.length) || 'Descrição é obrigatória']"
+          >
+          </QInput>
+          <QInput
+            v-if="!transaction?.id"
+            dense
+            square
+            filled
+            clearable
+            v-model="installments"
+            label="Parcelas"
+            type="number"
+            lazy-rules
+            :rules="[(val:number) => val > 0 || 'Minimo uma parcela']"
           >
           </QInput>
         </QCardSection>
@@ -108,37 +124,6 @@
       <CategoryCard @success="onCreateCategory" />
     </QDialog>
 
-    <QDialog v-model="isCreating" persistent>
-      <QCard>
-        <QCardSection class="row items-center">
-          <QAvatar icon="credit_card" color="primary" text-color="white" />
-          <span class="q-ml-sm">Quantas parcelas?</span>
-
-          <QInput
-            dense
-            square
-            filled
-            clearable
-            v-model="installments"
-            label="Parcelas"
-            type="number"
-            lazy-rules
-            :rules="[(val) => val > 0 || 'Minimo uma parcela']"
-          >
-          </QInput>
-        </QCardSection>
-
-        <QCardActions align="right">
-          <QBtn
-            flat
-            label="Salvar"
-            @click="confirmSave"
-            color="primary"
-            v-close-popup
-          />
-        </QCardActions>
-      </QCard>
-    </QDialog>
   </div>
 </template>
 <script setup lang="ts">
@@ -163,12 +148,11 @@ interface TransactionCardEvents {
 const DATE_FORMAT = "DD/MM/YYYY";
 const transactionStore = useTransactionStore();
 const categoriesStore = useCategoryStore();
-const dateProxyRef = useTemplateRef<QPopupProxy>('dateProxy')
+const dateProxyRef = useTemplateRef<QPopupProxy>("dateProxy");
 const props = defineProps<TransactionCardProps>();
 const emit = defineEmits<TransactionCardEvents>();
-const isCreating: Ref<boolean> = ref(false);
 const date: Ref<string> = ref(dayjs().format(DATE_FORMAT));
-const value: Ref<number|null> = ref(null);
+const value: Ref<number | null> = ref(null);
 const description: Ref<string | undefined> = ref(undefined);
 const category: Ref<Category | undefined> = ref(undefined);
 const creatingCategory: Ref<boolean> = ref(false);
@@ -211,21 +195,6 @@ function searchCategoriesOnScroll() {
   }
 }
 
-async function confirmSave() {
-  await transactionStore.upsertTransaction(
-    {
-      ...(props.transaction || {}),
-      date: dayjs(date.value, DATE_FORMAT).toDate(),
-      value: value.value as number,
-      description: description.value,
-      category: category.value!!,
-    },
-    installments.value
-  );
-
-  emit("success");
-}
-
 async function onSubmit() {
   if (props.transaction?.id) {
     await transactionStore.upsertTransaction({
@@ -239,6 +208,17 @@ async function onSubmit() {
     return;
   }
 
-  isCreating.value = true;
+  await transactionStore.upsertTransaction(
+    {
+      ...(props.transaction || {}),
+      date: dayjs(date.value, DATE_FORMAT).toDate(),
+      value: value.value as number,
+      description: description.value,
+      category: category.value!!,
+    },
+    installments.value
+  );
+  emit("success");
+
 }
 </script>
