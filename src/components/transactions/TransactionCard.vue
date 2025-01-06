@@ -30,7 +30,7 @@
             @focus="() => dateProxyRef?.show()"
             label="Data"
             mask="##/##/####"
-            :rules="[(val:string) => (val && val.length) || 'Data é obrigatória']"
+            :rules="[(val:string) => (val && val.length > 0) || 'Data é obrigatória']"
           >
             <template v-slot:prepend>
               <QIcon name="event" class="cursor-pointer">
@@ -97,7 +97,7 @@
             v-model="description"
             label="Descrição"
             lazy-rules
-            :rules="[(val:string) => (val && val.length) || 'Descrição é obrigatória']"
+            :rules="[(val:string) => (val && val.length > 0) || 'Descrição é obrigatória']"
           >
           </QInput>
           <QInput
@@ -123,7 +123,6 @@
     <QDialog v-model="creatingCategory">
       <CategoryCard @success="onCreateCategory" />
     </QDialog>
-
   </div>
 </template>
 <script setup lang="ts">
@@ -136,7 +135,7 @@ import { Category } from "@/interfaces";
 import CategoryCard from "../categories/CategoryCard.vue";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import { QInput, QPopupProxy } from "quasar";
+import { QInput, QPopupProxy, ValidationRule } from "quasar";
 dayjs.extend(customParseFormat);
 
 interface TransactionCardProps {
@@ -219,6 +218,5 @@ async function onSubmit() {
     installments.value
   );
   emit("success");
-
 }
 </script>
