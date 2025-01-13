@@ -11,12 +11,14 @@
           <QInput
             dense
             square
+            input-class="text-right"
+            reverse-fill-mask
             filled
             clearable
             v-model="value"
-            type="number"
             label="Valor"
             lazy-rules
+            mask="#.##"
             :rules="[
               (val:number) => (val && !Number.isNaN(val)) || 'Valor é obrigatório',
             ]"
